@@ -1,0 +1,139 @@
+#include <assert.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#define ALPHABET_LENGTH    26
+#define OPERATION_BUF_SIZE  7 /* Large enough to cover the word 'search' and '\0' */
+#define NAME_BUF_SIZE      22
+
+/* Basic trie node -- also, keep track of number of nodes below this one. */
+typedef struct node {
+    int prefix_count;
+    /* Allocate +1 for the the pointer to the end-of-string marker. Needed
+       for the search feature. */
+    struct node *children[ALPHABET_LENGTH + 1];
+} trie_node;
+
+/* Basic trie node -- also, keep track of number of nodes below this one. */
+typedef struct node {
+    int prefix_count;
+    /* Allocate +1 for the the pointer to the end-of-string marker. Needed
+       for the search feature. */
+    struct node *children[ALPHABET_LENGTH + 1];
+} trie_node;
+
+char* readline() {
+    size_t alloc_length = 1024;
+    size_t data_length = 0;
+    char* data = malloc(alloc_length);
+
+    while (true) {
+        char* cursor = data + data_length;
+        char* line = fgets(cursor, alloc_length - data_length, stdin);
+
+        if (!line) { break; }
+
+        data_length += strlen(cursor);
+
+        if (data_length < alloc_length - 1 || data[data_length - 1] == '\n') { break; }
+
+        size_t new_length = alloc_length << 1;
+        data = realloc(data, new_length);
+
+        if (!data) { break; }
+
+        alloc_length = new_length;
+    }
+
+    if (data[data_length - 1] == '\n') {
+        data[data_length - 1] = '\0';
+    }
+
+    data = realloc(data, data_length);
+
+    return data;
+}
+
+
+void contacts(char** queries, int lines){
+    char** contact = (char**)malloc(NAME_BUF_SIZE*lines*sizeof(char*));
+    for (int i = 0; i<lines;i++){
+        contact[i] = (char*)malloc(NAME_BUF_SIZE*sizeof(char));
+    }
+    int* result = (int*)malloc(lines*sizeof(int));
+    int j = 0;
+    int m = 0;
+    for(int i = 0; i<lines; i++){
+        char* operation;
+        operation = (char*)malloc(OPERATION_BUF_SIZE*sizeof(char));
+        char* name = (char*)malloc(NAME_BUF_SIZE*sizeof(char));
+        char* oper;
+        oper = strtok(queries[i]," ");
+        // printf("%s\n",oper);
+        strcpy(operation,oper);
+        // printf("%s\n",operation);
+        oper = strtok(NULL," ");
+        strcpy(name,oper);
+        if(strcmp(operation,"add")==0){
+            memcpy(contact[j],name,strlen(name));
+            j++;
+        } else if (strcmp(operation,"find")==0){
+            int count = 0;
+            // printf("j: %d\n",j);
+            for(int x = 0; x<j;x++){
+                char* temp = malloc(strlen(name));
+                memcpy(temp, contact[x], strlen(name));
+                // printf("contact: %s\n",temp);
+                if(strcmp(temp,name)==0){
+                    count++;
+                }
+                free(temp);
+            }
+            result[m]=count;
+            m++;
+        } else{
+            fprintf(stderr,"Invalid option\n");
+        }
+        free(name);
+        free(operation);
+    }
+    for (int n = 0; n<m;n++){
+        printf("%d\n",*(result+n));
+    }
+    for (int i = 0; i<lines;i++){
+        free(contact[i]);
+    }
+    free(contact);
+    free(result);
+    return;
+}
+
+int main(){
+    int lines;
+    char* queries_rows_endptr;
+    char* queries_rows_str = readline();
+    lines = strtol(queries_rows_str, &queries_rows_endptr, 10);
+    char** queries = (char**)malloc(lines*(NAME_BUF_SIZE+OPERATION_BUF_SIZE)*sizeof(char*));
+    for (int i = 0; i<lines;i++){
+        queries[i] = (char*)malloc((NAME_BUF_SIZE+OPERATION_BUF_SIZE)*sizeof(char));
+    }
+    for(int i = 0; i<lines;i++){
+        // printf("%d\n",i);
+        read(STDIN_FILENO, queries[i],(NAME_BUF_SIZE+OPERATION_BUF_SIZE));
+        if(queries[i][strlen(queries[i])-1]=='\n'){
+            queries[i][strlen(queries[i])-1]='\0';
+        }
+        // printf("add query: %s",queries[i]);
+    }
+    contacts(queries, lines);
+    for (int i = 0; i<lines;i++){
+        free(queries[i]);
+    }
+    free(queries);
+    return 0;
+}
